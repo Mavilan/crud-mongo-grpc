@@ -7,6 +7,8 @@ import org.bson.types.ObjectId;
 
 public class PersonMapper {
 
+    private PersonMapper(){}
+
     public static Person documentToPerson(Document document){
 
         return Person.newBuilder()

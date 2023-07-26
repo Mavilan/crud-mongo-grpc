@@ -8,7 +8,7 @@ En este repositorio se encuentra un ejemplo de un servicio grpc en el que se des
 ### Dependencias
 Se requiere agregar las siguientes dependencias al proyecto:
 
-dependencia para reconocer clases de un **message** creadas por el compilador
+- dependencia para reconocer clases de un **message** creadas por el compilador
 ```
 <dependency>
     <groupId>com.google.protobuf</groupId>
@@ -16,7 +16,7 @@ dependencia para reconocer clases de un **message** creadas por el compilador
     <version>3.21.5</version>
 </dependency>
 ````
-dependencia para reconocer clases de un **service** grpc creadas por el compilador:
+- dependencia para reconocer clases de un **service** grpc creadas por el compilador:
 ```
 <dependency>
     <groupId>io.grpc</groupId>
@@ -34,7 +34,7 @@ dependencia para reconocer clases de un **service** grpc creadas por el compilad
     <version>1.2</version>
 </dependency>
 ```
-dependencia para levantar al servicio:
+- dependencia para levantar al servicio:
 ```       
 <dependency>
     <groupId>io.grpc</groupId>
@@ -42,7 +42,7 @@ dependencia para levantar al servicio:
     <version>1.49.0</version>
 </dependency>
 ```
-dependencia para usar objetos de mongodb:
+- dependencia para usar objetos de mongodb:
 ```
 <dependency>
     <groupId>org.mongodb</groupId>
@@ -50,7 +50,7 @@ dependencia para usar objetos de mongodb:
     <version>3.2.2</version>
 </dependency>
 ```
-dependencia para poder realizar test unitarios:
+- dependencia para poder realizar test unitarios:
 ```
 <dependency>
     <groupId>junit</groupId>
@@ -62,7 +62,9 @@ dependencia para poder realizar test unitarios:
 
 ### Plugins
 
-Plugin para compilacion con maven
+Se requieren los siguientes plugins para el buen funcionamiento del proyecto:
+
+- plugin para compilacion con maven:
 ```
 <plugin>
     <groupId>org.apache.maven.plugins</groupId>
@@ -74,7 +76,7 @@ Plugin para compilacion con maven
     </configuration>
 </plugin>
 ```
-Plugin para compilar el archivo proto, tanto para los objetos **message** como para los **services**:
+- plugin para compilar el archivo proto, tanto para los objetos **message** como para los **services**:
 ```   
 <plugin>
     <groupId>org.xolstice.maven.plugins</groupId>
@@ -97,6 +99,7 @@ Plugin para compilar el archivo proto, tanto para los objetos **message** como p
     </executions>
 </plugin>
 ```
+### Extenciones
 
 Y finalmente agregar la siguiente extencion para reconocer variables de ambiente:
 ```
@@ -110,11 +113,11 @@ Y finalmente agregar la siguiente extencion para reconocer variables de ambiente
 ---
 ## Indicaciones de uso
 
-Se requiere compilar el proyecto con ``mvn compile``para generar las clases del archivo proto y que no existan errores.
+Se requiere compilar el proyecto con ``mvn compile`` para generar las clases del archivo proto y que no existan errores.
 
-Despues inicar el proceso del server, este quedara esperando las llmadas del cliente.
+Despues inicar el proceso del server, este quedara esperando las llamadas del cliente.
 
-Despues iniciar el proceso del cliente y ejecutara una llamada al servicio.
+Despues iniciar el proceso del cliente y ejecutar una llamada al servicio.
 
 ___
 

@@ -8,9 +8,9 @@ import io.grpc.ServerBuilder;
 
 import java.io.IOException;
 
-public class MiGrpcServer {
+import static com.mavilan.grpc.person.util.MyConstant.PORT;
 
-    private static final int PORT = 50050;
+public class MiGrpcServer {
 
     public static void main(String[] args) {
 
@@ -22,6 +22,7 @@ public class MiGrpcServer {
                 .forPort(PORT)
                 .addService(new PersonServiceImpl(mongoClient))
                 .build();
+
         try {
             server.start();
             System.out.println("[SERV][INF] Servidor iniciado y escuchando en el puerto: " + PORT);
