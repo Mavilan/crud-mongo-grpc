@@ -4,6 +4,7 @@ public class MyConstant {
 
 
     public static final int PORT = 50050;
+    public static final String HOSTNAME = "localhost";
     public static final String ERROR_BASE = "Ocurrio un error en la comuniación a la base...";
     public static final String IMPL_ERROR_BASE = "[IMPL][ERR] Ocurrio un error en la comuniación a la base: ";
     public static final String NO_ELEM_ID = "No se encontraron elementos con ese id...";
