@@ -10,8 +10,8 @@ option java_package = "com.mavilan.grpc.person";
 option java_outer_classname = "PersonProtoClass";
 
 message Physical {
-    float height = 1;
-    float weght = 2;
+    double height = 1;
+    double weight = 2;
 }
 
 message Person {

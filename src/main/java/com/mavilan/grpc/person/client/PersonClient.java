@@ -1,5 +1,7 @@
 package com.mavilan.grpc.person.client;
 
+import com.google.protobuf.InvalidProtocolBufferException;
+import com.google.protobuf.util.JsonFormat;
 import com.mavilan.grpc.person.ManagePersonGrpc;
 import com.mavilan.grpc.person.Person;
 import com.mavilan.grpc.person.PersonId;
@@ -28,37 +30,35 @@ public class PersonClient {
         ManagePersonGrpc.ManagePersonBlockingStub blockingStub = ManagePersonGrpc.newBlockingStub(channel);
 
         // acciones para probar todos los rpc's
-        PersonId personId = insertPerson(blockingStub);
+        insertPerson(blockingStub);
 
-        Person person = findPerson(blockingStub, personId);
+        Person person = findPerson(blockingStub, PersonId.newBuilder().setId("unid").build());
 
         updatePerson(blockingStub, person);
 
-        deletePerson(blockingStub, personId);
-        System.out.println("[CLIE][INF] Termiann acciones de cliente...");
+        deletePerson(blockingStub, PersonId.newBuilder().setId("unid").build());
+        System.out.println("[CLIE][INF] Terminan acciones de cliente...");
     }
 
-    private static PersonId insertPerson(ManagePersonGrpc.ManagePersonBlockingStub blockingStub) {
+    private static void insertPerson(ManagePersonGrpc.ManagePersonBlockingStub blockingStub) {
         PersonResponse personResponse = PersonResponse.getDefaultInstance();
         try {
             personResponse = blockingStub.insertOnePerson(Person.newBuilder()
-                    .setId("10001")
+                    .setId("unid")
                     .setFirstName("Marco")
                     .setLastName("Avila")
                     .setAge(30)
                     .setGender(Person.Gender.GENDER_MALE)
                     .setWorker(true)
                     .setPhysical(Physical.newBuilder()
-                            .setWeght(65.5f)
-                            .setHeight(1.74f)
+                            .setWeight(65.5)
+                            .setHeight(1.75)
                             .build())
                     .build());
             System.out.println("[CLIE][INF] Cliente creado con id: ".concat(personResponse.getPersonId().getId()));
         } catch (RuntimeException rte) {
-            System.out.println("[CLIE][ERR] No se pudo conectar con el servidor: ".concat(rte.getMessage()));
+            System.out.println("[CLIE][ERR] Fallo insert: ".concat(rte.getMessage()));
         }
-
-        return personResponse.getPersonId();
     }
 
     private static Person findPerson(ManagePersonGrpc.ManagePersonBlockingStub blockingStub, PersonId personId) {
@@ -66,9 +66,11 @@ public class PersonClient {
         Person onePerson = null;
         try {
             onePerson = blockingStub.findOnePerson(personId);
-            System.out.println("[CLIE][INF] Cliente encontrado: ".concat(onePerson.toString()));
+            System.out.println("[CLIE][INF] Cliente encontrado: ".concat(JsonFormat.printer().print(onePerson)));
         } catch (RuntimeException rte) {
-            System.out.println("[CLIE][ERR] No se pudo conectar con el servidor: ".concat(rte.getMessage()));
+            System.out.println("[CLIE][ERR] Fallo find: ".concat(rte.getMessage()));
+        } catch (InvalidProtocolBufferException e) {
+            System.out.println("[CLIE][ERR] Formato erroneo para imprimir...");
         }
 
         return onePerson;

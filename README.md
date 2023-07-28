@@ -16,6 +16,14 @@ Se requiere agregar las siguientes dependencias al proyecto:
     <version>3.21.5</version>
 </dependency>
 ````
+- dependencia para usar utilidades para los objetos **message**:
+```
+<dependency>
+    <groupId>com.google.protobuf</groupId>
+    <artifactId>protobuf-java-util</artifactId>
+    <version>3.21.5</version>
+</dependency>
+```
 - dependencia para reconocer clases de un **service** grpc creadas por el compilador:
 ```
 <dependency>

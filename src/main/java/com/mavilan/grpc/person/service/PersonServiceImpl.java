@@ -17,7 +17,6 @@ import com.mongodb.client.result.InsertOneResult;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import static com.mavilan.grpc.person.service.PersonMapper.documentToPerson;
 import static com.mavilan.grpc.person.service.PersonMapper.personToDocument;
@@ -32,6 +31,8 @@ import static com.mavilan.grpc.person.util.MyConstant.NO_ELEM_ID;
 import static com.mavilan.grpc.person.util.MyConstant.NO_INSERT;
 import static com.mavilan.grpc.person.util.MyConstant.NO_UPDATE;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Updates.combine;
+import static com.mongodb.client.model.Updates.set;
 
 public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
 
@@ -46,7 +47,7 @@ public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
     public void findOnePerson(PersonId personId, StreamObserver<Person> responseObserver) {
         if (personId.getId().isEmpty()) onError(responseObserver, Status.INVALID_ARGUMENT, ID_NEED);
 
-        Document person = personCollection.find(eq("_id", new ObjectId(personId.getId()))).first();
+        Document person = personCollection.find(eq("id", personId.getId())).first();
         if (person == null) onError(responseObserver, Status.NOT_FOUND, NO_ELEM_ID, "Id: ".concat(personId.getId()));
 
         System.out.println("[IMPL][INF] Persona obtenida: " + person);
@@ -82,6 +83,7 @@ public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
             onError(responseObserver, Status.INTERNAL, NO_INSERT);
         }
 
+        System.out.println("[IMPL][INF] Persona insertada: ".concat(insertOneResult.toString()));
         responseObserver.onNext(PersonResponse.newBuilder()
                 .setPersonId(PersonId.newBuilder()
                         .setId(insertOneResult.getInsertedId().asObjectId().getValue().toString())
@@ -97,7 +99,11 @@ public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
 
         Document document = null;
         try {
-            document = personCollection.findOneAndUpdate(eq("_id", new ObjectId(person.getId())), personToDocument(person));
+            document = personCollection.findOneAndUpdate(eq("id", person.getId()),
+                    combine(
+                            set("lastName", person.getLastName()),
+                            set("age", person.getAge())
+                    ));
             response = true;
         } catch (MongoException me) {
             System.out.println(IMPL_ERROR_BASE + me.getMessage());
@@ -106,6 +112,7 @@ public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
 
         if (document.isEmpty()) onError(responseObserver, Status.FAILED_PRECONDITION, NO_UPDATE);
 
+        System.out.println("[IMPL][INF] Persona actualizada: ".concat(person.toString()));
         responseObserver.onNext(PersonResponse.newBuilder()
                 .setValue(BoolValue.newBuilder()
                         .setValue(response)
@@ -121,7 +128,7 @@ public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
 
         DeleteResult deleteResult = null;
         try {
-            deleteResult = personCollection.deleteOne(eq("_id", new ObjectId(personId.getId())));
+            deleteResult = personCollection.deleteOne(eq("id", personId.getId()));
             response = true;
         } catch (MongoException me) {
             System.out.println(IMPL_ERROR_BASE + me.getMessage());
@@ -130,6 +137,7 @@ public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
 
         if (!deleteResult.wasAcknowledged()) onError(responseObserver, Status.FAILED_PRECONDITION, NO_DELETE);
 
+        System.out.println("[IMPL][INF] Persona borrada: ".concat(deleteResult.toString()));
         responseObserver.onNext(PersonResponse.newBuilder()
                 .setValue(BoolValue.newBuilder()
                         .setValue(response)
