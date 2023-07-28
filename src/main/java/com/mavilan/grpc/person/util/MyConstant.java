@@ -2,6 +2,7 @@ package com.mavilan.grpc.person.util;
 
 public class MyConstant {
 
+    private MyConstant(){}
 
     public static final int PORT = 50050;
     public static final String HOSTNAME = "localhost";
@@ -13,5 +14,5 @@ public class MyConstant {
     public static final String NO_INSERT = "No se pudo hacer insert en la base...";
     public static final String ELEM_NEED = "Elemento necesario para la actualizacion...";
     public static final String NO_UPDATE = "No se pudo actualizar en la base...";
-    public static final String NO_DELETE = "No se pudo actualizar en la base...";
+    public static final String NO_DELETE = "No se pudo borrar en la base...";
 }

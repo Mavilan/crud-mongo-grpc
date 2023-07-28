@@ -128,10 +128,3 @@ Despues inicar el proceso del server, este quedara esperando las llamadas del cl
 Despues iniciar el proceso del cliente y ejecutar una llamada al servicio.
 
 ___
-
-## Pruebas unitarias
-
-
-Cambiar
-
-Solo se estara probando la implementacion del servidor como normlamente se prueban en los proyectos java.

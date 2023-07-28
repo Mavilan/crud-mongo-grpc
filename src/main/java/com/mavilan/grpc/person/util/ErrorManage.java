@@ -5,6 +5,8 @@ import io.grpc.stub.StreamObserver;
 
 public class ErrorManage {
 
+    private ErrorManage(){}
+
     public static void onError(StreamObserver streamObserver, Status status, String message){
         streamObserver.onError(status
                 .withDescription(message)
