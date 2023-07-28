@@ -6,6 +6,7 @@ import com.mavilan.grpc.person.ManagePersonGrpc;
 import com.mavilan.grpc.person.Person;
 import com.mavilan.grpc.person.PersonId;
 import com.mavilan.grpc.person.PersonList;
+import com.mavilan.grpc.person.PersonResponse;
 import com.mongodb.MongoException;
 import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoClient;
@@ -16,11 +17,22 @@ import com.mongodb.client.result.InsertOneResult;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 
 import static com.mavilan.grpc.person.service.PersonMapper.documentToPerson;
 import static com.mavilan.grpc.person.service.PersonMapper.personToDocument;
+import static com.mavilan.grpc.person.util.ErrorManage.onError;
+import static com.mavilan.grpc.person.util.MyConstant.ELEM_NEED;
+import static com.mavilan.grpc.person.util.MyConstant.ERROR_BASE;
+import static com.mavilan.grpc.person.util.MyConstant.ID_NEED;
+import static com.mavilan.grpc.person.util.MyConstant.IMPL_ERROR_BASE;
+import static com.mavilan.grpc.person.util.MyConstant.NO_DELETE;
+import static com.mavilan.grpc.person.util.MyConstant.NO_ELEM;
+import static com.mavilan.grpc.person.util.MyConstant.NO_ELEM_ID;
+import static com.mavilan.grpc.person.util.MyConstant.NO_INSERT;
+import static com.mavilan.grpc.person.util.MyConstant.NO_UPDATE;
 import static com.mongodb.client.model.Filters.eq;
+import static com.mongodb.client.model.Updates.combine;
+import static com.mongodb.client.model.Updates.set;
 
 public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
 
@@ -32,137 +44,105 @@ public class PersonServiceImpl extends ManagePersonGrpc.ManagePersonImplBase {
     }
 
     @Override
-    public void findOnePerson(PersonId request, StreamObserver<Person> responseObserver) {
-        if (request.getId().isEmpty()){
-            responseObserver.onError(Status.INVALID_ARGUMENT
-                    .withDescription("Id es requerido para la busqueda...")
-                    .asRuntimeException());
-        }
+    public void findOnePerson(PersonId personId, StreamObserver<Person> responseObserver) {
+        if (personId.getId().isEmpty()) onError(responseObserver, Status.INVALID_ARGUMENT, ID_NEED);
 
-        Document document = personCollection.find(eq("_id", new ObjectId(request.getId()))).first();
-        if (document == null){
-            responseObserver.onError(Status.NOT_FOUND
-                    .withDescription("No se encontraron elementos con ese id")
-                    .augmentDescription("Id : " + request.getId())
-                    .asRuntimeException());
-        }
+        Document person = personCollection.find(eq("id", personId.getId())).first();
+        if (person == null) onError(responseObserver, Status.NOT_FOUND, NO_ELEM_ID, "Id: ".concat(personId.getId()));
 
-        System.out.println("[IMPL][INF] Objeto obtenido document: " + document);
-
-        responseObserver.onNext(documentToPerson(document));
+        System.out.println("[IMPL][INF] Persona obtenida: " + person);
+        responseObserver.onNext(documentToPerson(person));
         responseObserver.onCompleted();
     }
 
     @Override
-    public void findManyPerson(Empty request, StreamObserver<PersonList> responseObserver) {
-
+    public void findManyPerson(Empty empty, StreamObserver<PersonList> responseObserver) {
         FindIterable<Document> documents = personCollection.find();
-        if (documents == null){
-            responseObserver.onError(Status.NOT_FOUND
-                    .withDescription("No se encontraron elementos en la base")
-                    .asRuntimeException());
-        }
+        if (documents.first() == null)  onError(responseObserver, Status.NOT_FOUND, NO_ELEM);
 
-        System.out.println("[IMPL][INF] Objeto obtenido document: " + documents);
+        System.out.println("[IMPL][INF] Personas obtenidas: " + documents);
         responseObserver.onNext(PersonList.newBuilder()
-                        .addAllPeople(documents.map(document -> documentToPerson(document)))
+                        .addAllPeople(documents.map(PersonMapper::documentToPerson))
                 .build());
         responseObserver.onCompleted();
     }
 
     @Override
-    public void insertOnePerson(Person request, StreamObserver<PersonId> responseObserver) {
-        if (request.getId().isEmpty()){
-            responseObserver.onError(Status.INVALID_ARGUMENT
-                    .withDescription("Id es requerido para la busqueda...")
-                    .asRuntimeException());
-        }
+    public void insertOnePerson(Person person, StreamObserver<PersonResponse> responseObserver) {
+        if (person.getId().isEmpty())  onError(responseObserver, Status.INVALID_ARGUMENT, ID_NEED);
 
         InsertOneResult insertOneResult = null;
         try {
-            insertOneResult = personCollection.insertOne(personToDocument(request));
+            insertOneResult = personCollection.insertOne(personToDocument(person));
         } catch (MongoException me) {
-            System.out.println("[IMPL][ERR] Ocurrio un error en la comuniación a la base: " + me.getMessage());
-            responseObserver.onError(Status.INTERNAL
-                    .withDescription("Ocurrio un error en la comuniación a la base")
-                    .augmentDescription(me.getMessage())
-                    .asRuntimeException());
+            System.out.println(IMPL_ERROR_BASE + me.getMessage());
+            onError(responseObserver, Status.INTERNAL, ERROR_BASE, me.getMessage());
         }
 
         if (!insertOneResult.wasAcknowledged() || insertOneResult.getInsertedId() == null){
-            responseObserver.onError(Status.INTERNAL
-                    .withDescription("No se pudo hacer insert en la base...")
-                    .asRuntimeException());
+            onError(responseObserver, Status.INTERNAL, NO_INSERT);
         }
 
-        responseObserver.onNext(PersonId.newBuilder().setId(String.valueOf(insertOneResult.getInsertedId())).build());
+        System.out.println("[IMPL][INF] Persona insertada: ".concat(insertOneResult.toString()));
+        responseObserver.onNext(PersonResponse.newBuilder()
+                .setPersonId(PersonId.newBuilder()
+                        .setId(insertOneResult.getInsertedId().asObjectId().getValue().toString())
+                        .build())
+                .build());
         responseObserver.onCompleted();
     }
 
     @Override
-    public void updateOnePerson(Person request, StreamObserver<BoolValue> responseObserver) {
+    public void updateOnePerson(Person person, StreamObserver<PersonResponse> responseObserver) {
         boolean response = false;
-
-        if (request.getId().isEmpty()){
-            onError(responseObserver, "Elemento necesario para la actualizacion...");
-        }
+        if (person.getId().isEmpty()) onError(responseObserver, Status.INVALID_ARGUMENT, ELEM_NEED);
 
         Document document = null;
         try {
-            document = personCollection.findOneAndUpdate(eq("_id", new ObjectId(request.getId())), personToDocument(request));
+            document = personCollection.findOneAndUpdate(eq("id", person.getId()),
+                    combine(
+                            set("lastName", person.getLastName()),
+                            set("age", person.getAge())
+                    ));
             response = true;
         } catch (MongoException me) {
-            manejaException(responseObserver, me);
+            System.out.println(IMPL_ERROR_BASE + me.getMessage());
+            onError(responseObserver, Status.INTERNAL, ERROR_BASE, me.getMessage());
         }
 
-        if (document.isEmpty()){
-            onError(responseObserver, "No se pudo actualizar en la base...");
-        }
+        if (document.isEmpty()) onError(responseObserver, Status.FAILED_PRECONDITION, NO_UPDATE);
 
-        responseObserver.onNext(BoolValue.newBuilder()
-                .setValue(response)
+        System.out.println("[IMPL][INF] Persona actualizada: ".concat(person.toString()));
+        responseObserver.onNext(PersonResponse.newBuilder()
+                .setValue(BoolValue.newBuilder()
+                        .setValue(response)
+                        .build())
                 .build());
         responseObserver.onCompleted();
     }
 
     @Override
-    public void deleteOnePerson(Person request, StreamObserver<BoolValue> responseObserver) {
+    public void deleteOnePerson(PersonId personId, StreamObserver<PersonResponse> responseObserver) {
         boolean response = false;
-
-        if (request.getId().isEmpty()){
-            onError(responseObserver, "Elemento necesario para borrar...");
-        }
+        if (personId.getId().isEmpty()) onError(responseObserver, Status.INVALID_ARGUMENT, ID_NEED);
 
         DeleteResult deleteResult = null;
         try {
-            deleteResult = personCollection.deleteOne(eq("_id", new ObjectId(request.getId())));
+            deleteResult = personCollection.deleteOne(eq("id", personId.getId()));
             response = true;
         } catch (MongoException me) {
-            manejaException(responseObserver, me);
+            System.out.println(IMPL_ERROR_BASE + me.getMessage());
+            onError(responseObserver, Status.INTERNAL, ERROR_BASE, me.getMessage());
         }
 
-        if (!deleteResult.wasAcknowledged()){
-            onError(responseObserver, "No se pudo actualizar en la base...");
-        }
+        if (!deleteResult.wasAcknowledged()) onError(responseObserver, Status.FAILED_PRECONDITION, NO_DELETE);
 
-        responseObserver.onNext(BoolValue.newBuilder()
-                .setValue(response)
+        System.out.println("[IMPL][INF] Persona borrada: ".concat(deleteResult.toString()));
+        responseObserver.onNext(PersonResponse.newBuilder()
+                .setValue(BoolValue.newBuilder()
+                        .setValue(response)
+                        .build())
                 .build());
         responseObserver.onCompleted();
-    }
-
-    private void onError(StreamObserver<BoolValue> responseObserver, String message) {
-        responseObserver.onError(Status.INTERNAL
-                .withDescription(message)
-                .asRuntimeException());
-    }
-
-
-    private void manejaException(StreamObserver<BoolValue> responseObserver, MongoException me) {
-        System.out.println("[IMPL][ERR] Ocurrio un error en la comuniación a la base: " + me.getMessage());
-        responseObserver.onError(Status.INTERNAL
-                .withDescription("Ocurrio un error en la comuniación a la base")
-                .augmentDescription(me.getMessage())
-                .asRuntimeException());
     }
 }
