@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package mavilan.misprotos.person;
+package mavilan.myprotos.person;
 
 import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
@@ -48,10 +48,10 @@ message PersonResponse {
 }
 
 service ManagePerson {
-    rpc findOnePerson(PersonId) returns (Person);
-    rpc findManyPerson(google.protobuf.Empty) returns (PersonList);
+    rpc FindOnePerson(PersonId) returns (Person);
+    rpc FindManyPerson(google.protobuf.Empty) returns (PersonList);
 
-    rpc insertOnePerson(Person) returns (PersonResponse);
-    rpc updateOnePerson(Person) returns (PersonResponse);
-    rpc deleteOnePerson(PersonId) returns (PersonResponse);
+    rpc InsertOnePerson(Person) returns (PersonResponse);
+    rpc UpdateOnePerson(Person) returns (PersonResponse);
+    rpc DeleteOnePerson(PersonId) returns (PersonResponse);
 }
